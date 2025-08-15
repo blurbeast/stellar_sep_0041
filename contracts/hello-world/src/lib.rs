@@ -1,5 +1,5 @@
 #![no_std]
-use soroban_sdk::{contract, contracterror, contractimpl, contracttype, vec, Address, Env, String, Vec};
+use soroban_sdk::{contract, contracterror, contractimpl, contracttype, Address, Env, String,};
 
 mod test;
 
@@ -48,11 +48,12 @@ trait ISep0041 {
     fn balance(env: &Env, id: Address) -> i128;
     fn name(env: &Env) -> String;
     fn decimals(env: &Env) -> u32;
-    fn symbol(env: Env) -> String;
+    fn symbol(env: &Env) -> String;
     fn mint(env: &Env, to: Address, amount: i128)  -> Result<bool, Sep0041Error> ;
     fn allowance(env: &Env, from: Address, spender: Address) -> i128;
     fn approve(env: &Env, from: Address, spender: Address, amount: i128, live_until_ledger: u32);
     fn transfer(env: &Env, from: Address, to: Address, amount: i128);
+    fn burn(env: &Env, from: Address, amount: i128);
 }
 
 #[contractimpl]
@@ -72,45 +73,43 @@ impl ISep0041 for Sep0041 {
     // fn init() -> Result<>
     fn balance(env: &Env, id: Address) -> i128 {
         // get the balace from the storage
-        let balance_key: DataKey = DataKey::Balance(id);
-        env.storage().instance().get(&balance_key).unwrap_or(0_i128)
+        Self::_balance(env, &id)
     }
 
     fn name(env: &Env) -> String {
-        env.storage().instance().get(&DataKey::Name).unwrap()
+        Self::_name(env)
     }
     fn decimals(env: &Env) -> u32 {
-        env.storage().instance().get(&DataKey::Decimal).unwrap()
+        Self::_decimal(env)
     }
-    fn symbol(env: Env) -> String {
-        env.storage().instance().get(&DataKey::Symbol).unwrap()
+    fn symbol(env: &Env) -> String {
+        Self::_symbol(env)
     }
 
     fn mint(env: &Env, to: Address, amount: i128) -> Result<bool, Sep0041Error>{
 
         // only admin
-        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
+        let admin: Address = Self::_admin(env);
         // throw error next 
         admin.require_auth();
         // get the balance to
 
-        let to_balance = Self::balance(&env, to.clone());
+        let to_balance = Self::_balance(&env, &to);
 
         // throw error if zero or less
         if amount <= 0 {
-            return Err(Sep0041Error::InsufficientBalance);
+            // return Err(Sep0041Error::InsufficientBalance);
         }
         let new_balance:i128 = to_balance + amount;   
         // save the new balance
-        env.storage().instance().set(&DataKey::Balance(to.clone()),&(new_balance));
-        let total_supply: i128 = env.storage().instance().get(&DataKey::TotalSupply).unwrap();
-        env.storage().instance().set(&DataKey::TotalSupply, &(total_supply + amount));
+        Self::_update_balance(env, &to, new_balance);
+        let total_supply: i128 = Self::_total_supply(env);
+        Self::_update_total_supply(env, total_supply+amount);
         Ok(true)
     }
 
     fn allowance(env: &Env, from: Address, spender: Address) -> i128 {
-        let tx_details: AllowanaceDetails = env.storage().instance().get(&DataKey::Allowance(from, spender)).unwrap();
-        tx_details.amount
+        Self::_allowance(env, from, spender).amount
     }
 
     fn approve(env: &Env, from: Address, spender: Address, amount: i128, live_until_ledger: u32) {
@@ -139,7 +138,7 @@ impl ISep0041 for Sep0041 {
             deadline: (env.ledger().timestamp() + (live_until_ledger as u64 * SECONDS_IN_TIME))
         };
 
-        env.storage().instance().set(&DataKey::Allowance(from.clone(), spender.clone()), &tx_details);
+        Self::_update_allowance(env, from, spender, tx_details);
 
     }
 
@@ -151,38 +150,89 @@ impl ISep0041 for Sep0041 {
             todo!()
         }
 
-        Self::_transfer(env, from, to, amount);
-        // // check from balance 
-        // let from_balance: i128 = env.storage().instance().get(&DataKey::Balance(from.clone())).unwrap();
+        Self::_transfer(env, &from, &to, amount);
+    }
 
-        // assert!(from_balance >= amount, "insufficient");
+    fn burn(env: &Env, from: Address, amount: i128) {
+        from.require_auth();
 
-        // // 
-        // let to_balance: i128 = env.storage().instance().get(&DataKey::Balance(to.clone())).unwrap();
+        //get from the from balance
+        let from_balance: i128 = Self::_balance(env, &from);
+        
+        assert!(from_balance>=amount,);
 
-        // let from_new_balance: i128 = from_balance - amount;
-        // let to_new_balance: i128 = to_balance + amount;
-
-        // // update the state
-        // env.storage().instance().set(&DataKey::Balance(from.clone()), &from_new_balance);
-        // env.storage().instance().set(&DataKey::Balance(to.clone()), &to_new_balance);
+        Self::_burn(env, &from, amount, from_balance);
     }
 }
 
 impl Sep0041 {
+
+    fn _name(env: &Env) -> String {
+        env.storage().instance().get(&DataKey::Name).unwrap()
+    }
+    fn _decimal(env: &Env) -> u32 {
+        env.storage().instance().get(&DataKey::Decimal).unwrap()   
+    }
+    fn _symbol(env: &Env) -> String {
+        env.storage().instance().get(&DataKey::Symbol).unwrap()
+    }
+
+    fn _admin(env: &Env) -> Address {
+        env.storage().instance().get(&DataKey::Admin).unwrap()
+    }
+
+    fn _burn(env: &Env, from: &Address, amount: i128, from_balance: i128) {
+        
+        // we update the states, from balance and the total supply
+        let from_new_balance: i128 = from_balance - amount;
+
+        // call the update method
+        Self::_update_balance(env, &from, from_new_balance);
+
+        // get total_supply
+        let total_supply: i128 = Self::_total_supply(env);
+        // update total supply
+        Self::_update_total_supply(env, total_supply-amount);
+    }
     
 
-    fn _transfer(env: &Env, from: Address, to: Address, amount: i128) {
+    fn _transfer(env: &Env, from: &Address, to: &Address, amount: i128) {
 
-         let from_balance: i128 = env.storage().instance().get(&DataKey::Balance(from.clone())).unwrap();
+         let from_balance: i128 = Self::_balance(env, from);
+         assert!(from_balance >= amount);
 
         // to balance
-        let to_balance: i128 = env.storage().instance().get(&DataKey::Balance(to.clone())).unwrap();
+        let to_balance: i128 = Self::_balance(env, to);
 
         let from_new_balance: i128 = from_balance - amount;
         let to_new_balance: i128 = to_balance + amount;
 
-        env.storage().instance().set(&DataKey::Balance(from.clone()), &from_new_balance);
-        env.storage().instance().set(&DataKey::Balance(to.clone()), &to_new_balance);
+        Self::_update_balance(env, from, from_new_balance);
+        Self::_update_balance(env, to, to_new_balance);
+    }
+
+    fn _balance(env: &Env, id: &Address) -> i128 {
+        let balance_key: DataKey = DataKey::Balance(id.clone());
+        env.storage().instance().get(&balance_key).unwrap_or(0_i128)
+    }
+
+    fn _update_balance(env: &Env, id: &Address, amount: i128) {
+        env.storage().instance().set(&DataKey::Balance(id.clone()), &amount);
+    }
+
+    fn _update_allowance(env: &Env, from: Address, spender: Address, tx_details: AllowanaceDetails) {
+        env.storage().instance().set(&DataKey::Allowance(from.clone(), spender.clone()), &tx_details);
+    }
+    fn _allowance(env: &Env, from: Address, spender: Address) -> AllowanaceDetails {
+        let tx_details: AllowanaceDetails = env.storage().instance().get(&DataKey::Allowance(from, spender)).unwrap();
+        tx_details
+    }
+
+    fn _total_supply(env: &Env) -> i128 {
+        env.storage().instance().get(&DataKey::TotalSupply).unwrap()
+    }
+
+    fn _update_total_supply(env: &Env, total_supply: i128) {
+        env.storage().instance().set(&DataKey::TotalSupply, &(total_supply));
     }
 }
