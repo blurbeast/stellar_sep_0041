@@ -21,10 +21,3 @@ pub enum DataKey {
     TotalSupply,
     Allowance(Address, Address)
 }
-
-
-#[contracttype]
-pub struct Approve {
-    from: Address,
-    spender: Address
-}
