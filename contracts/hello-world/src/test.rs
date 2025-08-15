@@ -12,7 +12,7 @@ mod test {
         (first_address, second_addess, third_address)
     }
 
-    use crate::{Sep0041, Sep0041Client};
+    use crate::contract_sep_41::{Sep0041, Sep0041Client};
     fn setup() -> (Env, Sep0041Client<'static>, Address) {
         let env: Env = Env::default();
 
