@@ -1,5 +1,5 @@
 #![no_std]
-use soroban_sdk::{contract, contracterror, contractimpl, contracttype, Address, Env, String,};
+use soroban_sdk::{contract, contracterror, contractimpl, contracttype, log, Address, Env, String};
 
 mod test;
 
@@ -66,6 +66,10 @@ impl Sep0041 {
         env.storage().instance().set(&DataKey::Symbol, &symbol);
         env.storage().instance().set(&DataKey::Decimal, &18_u32);
     }
+
+    pub fn total_supply(env: &Env) -> i128 {
+        Self::_total_supply(env)
+    }
 }
 
 
@@ -128,8 +132,11 @@ impl ISep0041 for Sep0041 {
         admin.require_auth();
         
         Self::_check_for_zero_amount(amount);
+        log!(env, "before balance");
 
         let to_balance = Self::_balance(&env, &to);
+
+        log!(env, "after balance");
 
         let new_balance:i128 = to_balance + amount;   
         // save the new balance
@@ -243,11 +250,15 @@ impl Sep0041 {
 
     fn _balance(env: &Env, id: &Address) -> i128 {
         let balance_key: DataKey = DataKey::Balance(id.clone());
-        env.storage().instance().get(&balance_key).unwrap_or(0_i128)
+        log!(env, "balance key {}", balance_key);
+        let result = env.storage().instance().get(&balance_key).unwrap_or(0_i128);
+        log!(env, "we should see here  {}", balance_key);
+        return result;
     }
 
     fn _update_balance(env: &Env, id: &Address, amount: i128) {
         env.storage().instance().set(&DataKey::Balance(id.clone()), &amount);
+        log!(env, "updated balance")
     }
 
     fn _update_allowance(env: &Env, from: Address, spender: Address, tx_details: AllowanaceDetails) {
@@ -259,7 +270,7 @@ impl Sep0041 {
     }
 
     fn _total_supply(env: &Env) -> i128 {
-        env.storage().instance().get(&DataKey::TotalSupply).unwrap()
+        env.storage().instance().get(&DataKey::TotalSupply).unwrap_or(0)
     }
 
     fn _update_total_supply(env: &Env, total_supply: i128) {
