@@ -71,18 +71,33 @@ impl ISep0041 for Sep0041 {
 
     fn approve(env: &Env, from: Address, spender: Address, amount: i128, live_until_ledger: u32) {
 
-        // authenticate the approver 'from'
-        from.require_auth();
 
+        from.require_auth();
+        // log!(env, "left the auth");
+
+        // log!(env, "first line");
         Self::_check_for_zero_amount(amount);
 
+        // log!(env, "second line");
         let deadline_time_stamp: u64 = live_until_ledger as u64 * SECONDS_IN_TIME;
 
+        // log!(env, "third line");
         assert!(deadline_time_stamp > Self::_current_time_stame(env));
 
         //now create the details and save
+        // let tx_details: AllowanaceDetails = Self::_create_allowance_details(amount, env.ledger().timestamp() + (live_until_ledger as u64 * SECONDS_IN_TIME));
+        //
+        // log!(env, "fifth");
+        // Self::_update_allowance(env, from, spender, tx_details);
+        let deadline_time_stamp: u64 = live_until_ledger as u64 * SECONDS_IN_TIME;
+        //
+        // log!(env, "third line");
+        assert!(deadline_time_stamp > Self::_current_time_stame(env));
+        //
+        // //now create the details and save
         let tx_details: AllowanaceDetails = Self::_create_allowance_details(amount, env.ledger().timestamp() + (live_until_ledger as u64 * SECONDS_IN_TIME));
-
+        //
+        // log!(env, "fifth");
         Self::_update_allowance(env, from, spender, tx_details);
     }
 
@@ -162,6 +177,7 @@ impl Sep0041 {
     }
 
     fn _create_allowance_details(amount: i128, deadline: u64) -> AllowanaceDetails {
+        // log!("fourth line");
         AllowanaceDetails { amount, deadline }
     }
 
@@ -197,9 +213,9 @@ impl Sep0041 {
 
     fn _balance(env: &Env, id: &Address) -> i128 {
         let balance_key: DataKey = DataKey::Balance(id.clone());
-        log!(env, "balance key {}", balance_key);
+        // log!(env, "balance key {}", balance_key);
         let result = env.storage().instance().get(&balance_key).unwrap_or(0_i128);
-        log!(env, "we should see here  {}", balance_key);
+        log!(env, "we should see here  {}", result);
         return result;
     }
 
@@ -210,6 +226,7 @@ impl Sep0041 {
 
     fn _update_allowance(env: &Env, from: Address, spender: Address, tx_details: AllowanaceDetails) {
         env.storage().instance().set(&DataKey::Allowance(from.clone(), spender.clone()), &tx_details);
+        log!(env, "done")
     }
     fn _allowance(env: &Env, from: &Address, spender: &Address) -> (i128, u64) {
         let tx_details: AllowanaceDetails = env.storage().instance().get(&DataKey::Allowance(from.clone(), spender.clone())).unwrap();
