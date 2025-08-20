@@ -1,6 +1,8 @@
 
 use soroban_sdk::{Address, Env, String, contractclient};
 use crate::errors::Sep0041Error;
+
+#[contractclient(name = "Sep0041Client")]
 pub trait ISep0041 {
     fn balance(env: &Env, id: Address) -> i128;
     fn name(env: &Env) -> String;
@@ -13,11 +15,4 @@ pub trait ISep0041 {
     fn burn(env: &Env, from: Address, amount: i128);
     fn transfer_from(env: &Env, spender: Address, from: Address, to: Address, amount: i128);
     fn burn_from(env: &Env, spender: Address, from: Address, amount: i128);
-}
-
-
-
-#[contractclient(name = "Sep0041")]
-pub trait IISep0041 {
-    fn transfer_from(env: &Env, spender: Address, from: Address, to: Address, amount: i128);
 }

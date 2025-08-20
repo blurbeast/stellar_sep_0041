@@ -28,7 +28,7 @@ impl Sep0041 {
 impl ISep0041 for Sep0041 {
     // fn init() -> Result<>
     fn balance(env: &Env, id: Address) -> i128 {
-        // get the balace from the storage
+        // get the balance from the storage
         Self::_balance(env, &id)
     }
 
@@ -42,45 +42,13 @@ impl ISep0041 for Sep0041 {
         Self::_symbol(env)
     }
 
-    fn burn_from(env: &Env, spender: Address, from: Address, amount: i128) {
-        spender.require_auth();
-        let (allowance, deadline) = Self::_allowance(env, &from, &spender);
-        let current_time_stamp: u64 = env.ledger().timestamp();
-
-        assert!(allowance>=amount && deadline>=current_time_stamp, "insufficient allowance or exceed deadline");
-
-        let from_balance: i128 = Self::_balance(env, &from);
-        Self:: _burn(env, &from, amount, from_balance);
-
-        let tx_details: AllowanaceDetails = Self::_create_allowance_details(allowance-amount, deadline);
-        Self::_update_allowance(env, from, spender, tx_details);
-    }
-
-    fn transfer_from(env: &Env, spender: Address, from: Address, to: Address, amount: i128) {
-
-        spender.require_auth();
-        // check allowance
-        // check allowance deadline
-        let (allowance, deadline) = Self::_allowance(env, &from, &spender);
-
-        let current_time_stamp: u64 = env.ledger().timestamp();
-
-        assert!(allowance>=amount && deadline>=current_time_stamp, "insufficient allowance or exceed deadline");
-
-        // transfer
-        Self::_transfer(env, &from, &to, amount);
-        // update allowance
-        let tx_details: AllowanaceDetails = Self::_create_allowance_details(allowance-amount, deadline);
-        Self::_update_allowance(env, from, spender, tx_details);
-    }
-
-    fn mint(env: &Env, to: Address, amount: i128) -> Result<bool, Sep0041Error>{
+    fn mint(env: &Env, to: Address, amount: i128) -> Result<bool, Sep0041Error> {
 
         // only admin
         let admin: Address = Self::_admin(env);
-        // throw error next 
+        // throw error next
         admin.require_auth();
-        
+
         Self::_check_for_zero_amount(amount);
         log!(env, "before balance");
 
@@ -88,11 +56,11 @@ impl ISep0041 for Sep0041 {
 
         log!(env, "after balance");
 
-        let new_balance:i128 = to_balance + amount;   
+        let new_balance: i128 = to_balance + amount;
         // save the new balance
         Self::_update_balance(env, &to, new_balance);
         let total_supply: i128 = Self::_total_supply(env);
-        Self::_update_total_supply(env, total_supply+amount);
+        Self::_update_total_supply(env, total_supply + amount);
         Ok(true)
     }
 
@@ -112,15 +80,13 @@ impl ISep0041 for Sep0041 {
 
         assert!(deadline_time_stamp > Self::_current_time_stame(env));
 
-        //now create the details and save 
+        //now create the details and save
         let tx_details: AllowanaceDetails = Self::_create_allowance_details(amount, env.ledger().timestamp() + (live_until_ledger as u64 * SECONDS_IN_TIME));
 
         Self::_update_allowance(env, from, spender, tx_details);
-
     }
 
     fn transfer(env: &Env, from: Address, to: Address, amount: i128) {
-
         from.require_auth();
 
         Self::_check_for_zero_amount(amount);
@@ -132,10 +98,41 @@ impl ISep0041 for Sep0041 {
 
         //get from the from balance
         let from_balance: i128 = Self::_balance(env, &from);
-        
+
         assert!(from_balance>=amount,);
 
         Self::_burn(env, &from, amount, from_balance);
+    }
+
+    fn transfer_from(env: &Env, spender: Address, from: Address, to: Address, amount: i128) {
+        spender.require_auth();
+        // check allowance
+        // check allowance deadline
+        let (allowance, deadline) = Self::_allowance(env, &from, &spender);
+
+        let current_time_stamp: u64 = env.ledger().timestamp();
+
+        assert!(allowance >= amount && deadline >= current_time_stamp, "insufficient allowance or exceed deadline");
+
+        // transfer
+        Self::_transfer(env, &from, &to, amount);
+        // update allowance
+        let tx_details: AllowanaceDetails = Self::_create_allowance_details(allowance - amount, deadline);
+        Self::_update_allowance(env, from, spender, tx_details);
+    }
+
+    fn burn_from(env: &Env, spender: Address, from: Address, amount: i128) {
+        spender.require_auth();
+        let (allowance, deadline) = Self::_allowance(env, &from, &spender);
+        let current_time_stamp: u64 = env.ledger().timestamp();
+
+        assert!(allowance >= amount && deadline >= current_time_stamp, "insufficient allowance or exceed deadline");
+
+        let from_balance: i128 = Self::_balance(env, &from);
+        Self::_burn(env, &from, amount, from_balance);
+
+        let tx_details: AllowanaceDetails = Self::_create_allowance_details(allowance - amount, deadline);
+        Self::_update_allowance(env, from, spender, tx_details);
     }
 }
 

@@ -1,5 +1,6 @@
 #![no_std]
-use soroban_sdk::{contract, contractclient, contractimpl, contracttype, vec, Address, Env, String, Vec};
+use soroban_sdk::{contract, contractimpl, contracttype, Address, Env, String,};
+use sep_0041::Sep0041Client;
 
 
 #[contracttype]
@@ -15,6 +16,7 @@ pub struct Employee{
 #[derive(Debug)]
 pub enum DataKey{
     Owner,
+    Contract,
     Employee(Address),
     Exist(Address), // to ensure no duplicate
 }
@@ -26,12 +28,13 @@ pub struct EmployeeContract;
 #[contractimpl]
 impl EmployeeContract {
 
-    fn __new(env: &Env, admin: Address) {
+    fn __new(env: &Env, admin: Address, token_contract_address: Address) {
         if env.storage().instance().has(&DataKey::Owner) {
             // throw error
         }
         // save the owner here
         env.storage().instance().set(&DataKey::Owner, &admin);
+        env.storage().instance().set(&DataKey::Contract, &token_contract_address);
     }
 
     // add an employee
@@ -54,7 +57,7 @@ impl EmployeeContract {
     }
 
 
-    fn pay_employee(env: &Env, admin: Address, employee_address: Address) {
+    fn pay_employee(env: &Env, admin: Address, employee_address: Address,) {
 
         admin.require_auth();
 
@@ -62,8 +65,14 @@ impl EmployeeContract {
         let employee_details: Employee = env.storage().instance().get(&DataKey::Employee(employee_address.clone())).expect("");
         let employee_pay: u128 = employee_details.pay;
 
-        // call the token client here
+        let token_address: Address = env.storage().instance().get(&DataKey::Contract).expect("");
+
+        let sep_0041_instance = Sep0041Client::new(env, &token_address);
         
+        let contract_address: Address = env.current_contract_address();
+
+        sep_0041_instance.transfer_from(&contract_address, &admin, &employee_details.address, &(employee_pay as i128) );
+
     }
 }
 

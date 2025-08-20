@@ -505,6 +505,7 @@ dependencies = [
 name = "employee_contract"
 version = "0.0.0"
 dependencies = [
+ "sep_0041",
  "soroban-sdk",
 ]
 
