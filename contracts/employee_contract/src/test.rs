@@ -1,12 +1,9 @@
-
-
-
 #[cfg(test)]
 mod test {
-    use soroban_sdk::{testutils::{Address as _,}, Address, Env, String, log};
+    use crate::{EmployeeContract, EmployeeContractClient};
     use sep_0041::contract_sep_41::Sep0041;
     use sep_0041::Sep0041Client;
-    use crate::{EmployeeContract, EmployeeContractClient};
+    use soroban_sdk::{log, testutils::Address as _, Address, Env, String};
 
     fn generate_addresses(env: &Env) -> (Address, Address, Address) {
         let first_address: Address = Address::generate(env);
@@ -16,18 +13,35 @@ mod test {
         (first_address, second_address, third_address)
     }
 
-    fn setup() -> (Env, EmployeeContractClient<'static>, Address, Address, Sep0041Client<'static>, Address) {
+    fn setup() -> (
+        Env,
+        EmployeeContractClient<'static>,
+        Address,
+        Address,
+        Sep0041Client<'static>,
+        Address,
+    ) {
         let env: Env = Env::default();
 
         let (admin, second_admin, _) = generate_addresses(&env);
         log!(&env, "before ::: the sep0041");
-        let contract_sep0041_id = env.register(Sep0041, (admin.clone(), String::from_str(&env, "loaded"), String::from_str(&env, "lsd",)));
+        let contract_sep0041_id = env.register(
+            Sep0041,
+            (
+                admin.clone(),
+                String::from_str(&env, "loaded"),
+                String::from_str(&env, "lsd"),
+            ),
+        );
 
         let sep0041_instance = Sep0041Client::new(&env, &contract_sep0041_id.clone());
 
         log!(&env, "after the sep0041");
 
-        let contract_employee_id = env.register(EmployeeContract, (second_admin.clone(), contract_sep0041_id));
+        let contract_employee_id = env.register(
+            EmployeeContract,
+            (second_admin.clone(), contract_sep0041_id),
+        );
 
         log!(&env, "employee contract deployed successfully");
 
@@ -35,7 +49,14 @@ mod test {
 
         let employee_client = EmployeeContractClient::new(&env, &contract_employee_id.clone());
 
-        (env, employee_client, admin, second_admin, sep0041_instance, contract_employee_id)
+        (
+            env,
+            employee_client,
+            admin,
+            second_admin,
+            sep0041_instance,
+            contract_employee_id,
+        )
     }
 
     #[test]
@@ -58,7 +79,6 @@ mod test {
 
         employee_client.add_employee(&sec_admin, &employee_name, &b, &2000);
         assert_eq!(employee_client.get_employee_count(), 2);
-
     }
 
     // #[test]

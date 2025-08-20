@@ -1,13 +1,12 @@
-
-use soroban_sdk::{Address, contracttype};
+use soroban_sdk::{contracttype, Address};
 
 pub static SECONDS_IN_TIME: u64 = 60;
 
 #[contracttype]
-#[derive(Debug, )]
+#[derive(Debug)]
 pub struct AllowanaceDetails {
     pub amount: i128,
-    pub deadline: u64
+    pub deadline: u64,
 }
 
 #[contracttype]
@@ -19,5 +18,5 @@ pub enum DataKey {
     Decimal,
     Admin,
     TotalSupply,
-    Allowance(Address, Address)
+    Allowance(Address, Address),
 }

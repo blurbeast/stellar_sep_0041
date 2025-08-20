@@ -1,6 +1,5 @@
-
-use soroban_sdk::{Address, Env, String, contractclient};
 use crate::errors::Sep0041Error;
+use soroban_sdk::{contractclient, Address, Env, String};
 
 #[contractclient(name = "Sep0041Client")]
 pub trait ISep0041 {
@@ -8,7 +7,7 @@ pub trait ISep0041 {
     fn name(env: &Env) -> String;
     fn decimals(env: &Env) -> u32;
     fn symbol(env: &Env) -> String;
-    fn mint(env: &Env, to: Address, amount: i128)  -> Result<bool, Sep0041Error> ;
+    fn mint(env: &Env, to: Address, amount: i128) -> Result<bool, Sep0041Error>;
     fn allowance(env: &Env, from: Address, spender: Address) -> i128;
     fn approve(env: &Env, from: Address, spender: Address, amount: i128, live_until_ledger: u32);
     fn transfer(env: &Env, from: Address, to: Address, amount: i128);
