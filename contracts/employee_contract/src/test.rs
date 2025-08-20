@@ -61,7 +61,7 @@ mod test {
 
     #[test]
     fn test_deploy_employee() {
-        let (env, employee_client, _, sec_admin, _, _) = setup();
+        let (_, employee_client, _, sec_admin, _, _) = setup();
         assert_eq!(employee_client.get_owner(), sec_admin)
     }
 
