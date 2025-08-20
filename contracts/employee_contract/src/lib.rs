@@ -177,19 +177,22 @@ impl EmployeeContract {
             &employee_details.address,
             &(employee_pay as i128),
         );
- 
+
         emit_employee_paid(env, employee_address, employee_details.pay);
     }
 
-    pub fn is_employee_suspended(env: &Env, address: Address) -> Option<bool>{
+    pub fn is_employee_suspended(env: &Env, address: Address) -> Option<bool> {
         Self::_get_employee_suspension_status(env, &address)
     }
 
-    pub fn suspend_employee(env: &Env, employee_address: Address) -> Result<(), EmployeeContractError> {
+    pub fn suspend_employee(
+        env: &Env,
+        employee_address: Address,
+    ) -> Result<(), EmployeeContractError> {
         let _ = Self::_check_if_address_is_an_employee(env, &employee_address);
 
         Self::_suspend_employee(env, &employee_address);
-        emit_employee_suspended(env, &employee_address,);
+        emit_employee_suspended(env, &employee_address);
         Ok(())
     }
 
@@ -197,10 +200,12 @@ impl EmployeeContract {
         let mut employee_details = Self::_check_if_address_is_an_employee(env, &address).unwrap();
 
         let rank = Rank::check_level(level as u8);
-        
+
         employee_details.rank = rank;
 
-        env.storage().instance().set(&DataKey::Employee(address), &employee_details);
+        env.storage()
+            .instance()
+            .set(&DataKey::Employee(address), &employee_details);
     }
 }
 
@@ -209,7 +214,7 @@ impl Rank {
         match level {
             1 => Rank::Level_2,
             2 => Rank::Level_3,
-            _ => Rank::Level_1
+            _ => Rank::Level_1,
         }
     }
 }
@@ -218,7 +223,10 @@ impl EmployeeContract {
         env.storage().instance().get(&DataKey::Owner).unwrap()
     }
 
-    fn _check_if_address_is_an_employee(env: &Env, employee_address: &Address) -> Result<Employee, EmployeeContractError>{
+    fn _check_if_address_is_an_employee(
+        env: &Env,
+        employee_address: &Address,
+    ) -> Result<Employee, EmployeeContractError> {
         let is_employee: bool = env
             .storage()
             .instance()
@@ -228,19 +236,29 @@ impl EmployeeContract {
             return Err(EmployeeContractError::NotAnEmployee);
         }
 
-        Ok(env.storage().instance().get(&DataKey::Employee(employee_address.clone())).unwrap())
+        Ok(env
+            .storage()
+            .instance()
+            .get(&DataKey::Employee(employee_address.clone()))
+            .unwrap())
     }
 
     fn _suspend_employee(env: &Env, address: &Address) {
-        env.storage().instance().set(&DataKey::Suspended(address.clone()),&true);
+        env.storage()
+            .instance()
+            .set(&DataKey::Suspended(address.clone()), &true);
     }
 
     fn _get_employee_suspension_status(env: &Env, address: &Address) -> Option<bool> {
-        env.storage().instance().get(&DataKey::Suspended(address.clone()))
+        env.storage()
+            .instance()
+            .get(&DataKey::Suspended(address.clone()))
     }
 
     fn _get_employee(env: &Env, address: &Address) -> Option<Employee> {
-        env.storage().instance().get(&DataKey::Employee(address.clone()))
+        env.storage()
+            .instance()
+            .get(&DataKey::Employee(address.clone()))
     }
 }
 

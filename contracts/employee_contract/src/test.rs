@@ -88,10 +88,10 @@ mod test {
         let (env, employee_client, _, sec_admin, _, _) = setup();
         let (a, _, _) = generate_addresses(&env);
         let employee_name = String::from_str(&env, "dele");
-    
+
         // add an employee
         employee_client.add_employee(&sec_admin, &employee_name, &a, &2000);
-    
+
         employee_client.pay_employee(&sec_admin, &a);
     }
 
@@ -143,8 +143,7 @@ mod test {
         employee_client.promote_employee(&a, &1);
 
         let employee_details = employee_client.get_employee(&a).unwrap();
-        assert_eq!(employee_details.rank as u8 , 1);
-
+        assert_eq!(employee_details.rank as u8, 1);
 
         // // suspend employee
         employee_client.suspend_employee(&a);

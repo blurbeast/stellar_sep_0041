@@ -1,4 +1,6 @@
-pub use self::employee_contract_events::{emit_employee_paid, emit_remove_employee, emit_employee_suspended};
+pub use self::employee_contract_events::{
+    emit_employee_paid, emit_employee_suspended, emit_remove_employee,
+};
 
 mod employee_contract_events {
     use soroban_sdk::{contracttype, Address, Env};
@@ -9,7 +11,7 @@ mod employee_contract_events {
         pub employee: Address,
     }
 
-     #[contracttype]
+    #[contracttype]
     #[derive(Debug)]
     pub struct EmployeeSuspended {
         pub employee: Address,
@@ -21,8 +23,6 @@ mod employee_contract_events {
         pub employee: Address,
         pub amount: u128,
     }
-
-
 
     pub fn emit_employee_paid(env: &Env, address: Address, amount: u128) {
         let employee_paid: EmployeePaid = EmployeePaid {
@@ -39,10 +39,11 @@ mod employee_contract_events {
             .publish(("employee_removed",), employee_removed);
     }
 
-    pub fn emit_employee_suspended(env: &Env, address: &Address,) {
-        let employee_suspended : EmployeeSuspended = EmployeeSuspended {
+    pub fn emit_employee_suspended(env: &Env, address: &Address) {
+        let employee_suspended: EmployeeSuspended = EmployeeSuspended {
             employee: address.clone(),
         };
-        env.events().publish(("employee_suspended",), employee_suspended);
+        env.events()
+            .publish(("employee_suspended",), employee_suspended);
     }
 }
