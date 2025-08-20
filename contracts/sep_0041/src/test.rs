@@ -6,10 +6,10 @@ mod test {
 
     fn generate_addresses(env: &Env) -> (Address, Address, Address) {
         let first_address: Address = Address::generate(env);
-        let second_addess: Address = Address::generate(env);
+        let second_address: Address = Address::generate(env);
         let third_address: Address = Address::generate(env);
 
-        (first_address, second_addess, third_address)
+        (first_address, second_address, third_address)
     }
 
     use crate::contract_sep_41::{Sep0041, Sep0041Client};
