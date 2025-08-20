@@ -177,7 +177,7 @@ impl EmployeeContract {
             &employee_details.address,
             &(employee_pay as i128),
         );
-
+ 
         emit_employee_paid(env, employee_address, employee_details.pay);
     }
 
@@ -186,11 +186,7 @@ impl EmployeeContract {
     }
 
     pub fn suspend_employee(env: &Env, employee_address: Address) -> Result<(), EmployeeContractError> {
-        let employee_result = Self::_check_if_address_is_an_employee(env, &employee_address);
-
-        // if !employee_result.is_ok(){
-        //     // throw error
-        // }
+        let _ = Self::_check_if_address_is_an_employee(env, &employee_address);
 
         Self::_suspend_employee(env, &employee_address);
         emit_employee_suspended(env, &employee_address,);
@@ -246,14 +242,6 @@ impl EmployeeContract {
     fn _get_employee(env: &Env, address: &Address) -> Option<Employee> {
         env.storage().instance().get(&DataKey::Employee(address.clone()))
     }
-
-    // fn check_level(level: u8) -> Rank {
-    //     match level {
-    //         1 => Rank::Level_2,
-    //         2 => Rank::Level_3,
-    //         _ => Rank::Level_1
-    //     }
-    // }
 }
 
 mod events;

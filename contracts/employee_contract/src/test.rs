@@ -81,18 +81,19 @@ mod test {
         assert_eq!(employee_client.get_employee_count(), 2);
     }
 
-    // #[test]
-    // #[should_panic]
-    // fn test_pay_employee_no_allowance() {
-    //     let (env, employee_client, _, sec_admin, _) = setup();
-    //     let (a, b, _) = generate_addresses(&env);
-    //     let employee_name = String::from_str(&env, "dele");
-    //
-    //     // add an employee
-    //     employee_client.add_employee(&sec_admin, &employee_name, &a, &2000);
-    //
-    //     employee_client.pay_employee(&sec_admin, &a);
-    // }
+    #[test]
+    #[should_panic]
+    fn test_pay_employee_no_allowance() {
+        // let (env, employee_client, _, sec_admin,_ _) = setup();
+        let (env, employee_client, _, sec_admin, _, _) = setup();
+        let (a, _, _) = generate_addresses(&env);
+        let employee_name = String::from_str(&env, "dele");
+    
+        // add an employee
+        employee_client.add_employee(&sec_admin, &employee_name, &a, &2000);
+    
+        employee_client.pay_employee(&sec_admin, &a);
+    }
 
     #[test]
     fn test_pay_employee() {
@@ -129,7 +130,7 @@ mod test {
     #[test]
     fn test_suspend_employee_and_promote_employee() {
         let (env, employee_client, _, sec_admin, _, _) = setup();
-        let (a, b, _) = generate_addresses(&env);
+        let (a, _, _) = generate_addresses(&env);
         let employee_name = String::from_str(&env, "dele");
 
         employee_client.add_employee(&sec_admin, &employee_name, &a, &2000);
