@@ -1,0 +1,13 @@
+{
+    "editor.wordWrap": "off",
+    "editor.cursorSmoothCaretAnimation": "on",
+    "editor.cursorWidth": 1,
+    "editor.cursorBlinking": "blink",
+    "editor.cursorStyle": "line",
+    "editor.formatOnPaste": true,
+    "editor.formatOnSave": true,
+    "files.autoSave": "afterDelay",
+    "files.autoSaveWhenNoErrors": true,
+    "files.insertFinalNewline": true,
+    "workbench.editor.alwaysShowEditorActions": true
+}

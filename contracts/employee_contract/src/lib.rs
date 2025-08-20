@@ -1,6 +1,8 @@
 #![no_std]
-use soroban_sdk::{contract, contractimpl, contracttype, Address, Env, String,};
+use soroban_sdk::{contract, contracterror, contractimpl, contracttype, Address, Env, String};
 use sep_0041::Sep0041Client;
+
+use crate::events::{emit_employee_paid, emit_remove_employee};
 
 
 #[contracttype]
@@ -8,7 +10,16 @@ use sep_0041::Sep0041Client;
 pub struct Employee{
     pub name: String,
     pub address: Address,
-    pub pay: u128
+    pub pay: u128,
+    pub rank: Rank,
+}
+
+#[contracttype]
+#[derive(Debug)]
+pub enum Rank {
+    Level_1, 
+    Level_2, 
+    Level_3
 }
 
 
@@ -20,6 +31,14 @@ pub enum DataKey{
     EmployeeCount,
     Employee(Address),
     Exist(Address), // to ensure no duplicate
+    Suspended(Address)
+}
+
+#[contracterror]
+#[derive(Debug)]
+pub enum EmployeeContractError {
+
+    NotAnEmployee = 1,
 }
 
 
@@ -57,13 +76,38 @@ impl EmployeeContract {
         let new_employee = Employee{
             name: new_employee_name,
             address: new_employee_address.clone(),
-            pay: employee_pay
+            pay: employee_pay,
+            rank: Rank::Level_1
         };
 
         env.storage().instance().set(&DataKey::Employee(new_employee_address.clone()), &new_employee);
         env.storage().instance().set(&DataKey::Exist(new_employee_address.clone()), &true);
         let present_count: u128 = env.storage().instance().get(&DataKey::EmployeeCount).unwrap_or(0_u128);
         env.storage().instance().set(&DataKey::EmployeeCount, &(present_count + 1));
+    }
+
+    pub fn remove_employee(env: &Env, employee_address: Address) -> Result<(), EmployeeContractError> {
+        // check if employee exist
+
+        let is_employee: bool = env.storage().instance().get(&DataKey::Exist(employee_address.clone())).unwrap_or_else(|| false);
+        if !is_employee {
+            return Err(EmployeeContractError::NotAnEmployee);
+        }
+
+        // get the admin
+        let admin: Address = Self::_get_employee(env);
+        admin.require_auth();
+
+
+        // remove the employee
+        env.storage().instance().remove(&DataKey::Employee(employee_address.clone()));
+        env.storage().instance().set(&DataKey::Exist(employee_address.clone()), &false);
+        // reduce the count
+        let current_employee_count: u128 = env.storage().instance().get(&DataKey::EmployeeCount).unwrap();
+        env.storage().instance().set(&DataKey::EmployeeCount, &(current_employee_count - 1));
+
+        emit_remove_employee(env, employee_address);
+        Ok(())
     }
 
 
@@ -83,8 +127,16 @@ impl EmployeeContract {
 
         sep_0041_instance.transfer_from(&contract_address, &admin, &employee_details.address, &(employee_pay as i128) );
 
+        emit_employee_paid(env, employee_address, employee_details.pay);
+    }
+}
+
+impl EmployeeContract {
+    fn _get_employee(env: &Env) -> Address {
+        env.storage().instance().get(&DataKey::Owner).unwrap()
     }
 }
 
 
 mod test;
+mod events;
