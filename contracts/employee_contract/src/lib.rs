@@ -14,7 +14,7 @@ pub struct Employee {
 }
 
 #[contracttype]
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Rank {
     Level_1,
     Level_2,
@@ -58,7 +58,7 @@ impl EmployeeContract {
         env.storage()
             .instance()
             .get(&DataKey::Owner)
-            .expect("not owner yet")
+            .expect("no owner yet")
     }
 
     pub fn get_employee_count(env: &Env) -> u128 {
@@ -66,6 +66,10 @@ impl EmployeeContract {
             .instance()
             .get(&DataKey::EmployeeCount)
             .unwrap_or(0_u128)
+    }
+
+    pub fn get_employee(env: &Env, address: Address) -> Option<Employee> {
+        Self::_get_employee(env, &address)
     }
     // add an employee
     pub fn add_employee(
@@ -126,7 +130,7 @@ impl EmployeeContract {
         }
 
         // get the admin
-        let admin: Address = Self::_get_employee(env);
+        let admin: Address = Self::_get_owner(env);
         admin.require_auth();
 
         // remove the employee
@@ -177,21 +181,44 @@ impl EmployeeContract {
         emit_employee_paid(env, employee_address, employee_details.pay);
     }
 
+    pub fn is_employee_suspended(env: &Env, address: Address) -> Option<bool>{
+        Self::_get_employee_suspension_status(env, &address)
+    }
+
     pub fn suspend_employee(env: &Env, employee_address: Address) -> Result<(), EmployeeContractError> {
         let employee_result = Self::_check_if_address_is_an_employee(env, &employee_address);
 
-        if !employee_result.is_ok(){
-            // throw error
-        }
+        // if !employee_result.is_ok(){
+        //     // throw error
+        // }
 
         Self::_suspend_employee(env, &employee_address);
         emit_employee_suspended(env, &employee_address,);
         Ok(())
     }
+
+    pub fn promote_employee(env: &Env, address: Address, level: u32) {
+        let mut employee_details = Self::_check_if_address_is_an_employee(env, &address).unwrap();
+
+        let rank = Rank::check_level(level as u8);
+        
+        employee_details.rank = rank;
+
+        env.storage().instance().set(&DataKey::Employee(address), &employee_details);
+    }
 }
 
+impl Rank {
+    fn check_level(level: u8) -> Rank {
+        match level {
+            1 => Rank::Level_2,
+            2 => Rank::Level_3,
+            _ => Rank::Level_1
+        }
+    }
+}
 impl EmployeeContract {
-    fn _get_employee(env: &Env) -> Address {
+    fn _get_owner(env: &Env) -> Address {
         env.storage().instance().get(&DataKey::Owner).unwrap()
     }
 
@@ -201,7 +228,7 @@ impl EmployeeContract {
             .instance()
             .has(&DataKey::Exist(employee_address.clone()));
 
-        if is_employee {
+        if !is_employee {
             return Err(EmployeeContractError::NotAnEmployee);
         }
 
@@ -211,6 +238,22 @@ impl EmployeeContract {
     fn _suspend_employee(env: &Env, address: &Address) {
         env.storage().instance().set(&DataKey::Suspended(address.clone()),&true);
     }
+
+    fn _get_employee_suspension_status(env: &Env, address: &Address) -> Option<bool> {
+        env.storage().instance().get(&DataKey::Suspended(address.clone()))
+    }
+
+    fn _get_employee(env: &Env, address: &Address) -> Option<Employee> {
+        env.storage().instance().get(&DataKey::Employee(address.clone()))
+    }
+
+    // fn check_level(level: u8) -> Rank {
+    //     match level {
+    //         1 => Rank::Level_2,
+    //         2 => Rank::Level_3,
+    //         _ => Rank::Level_1
+    //     }
+    // }
 }
 
 mod events;

@@ -125,4 +125,30 @@ mod test {
         assert_eq!(employer_balance, 8_000);
         assert_eq!(employee_balance, 2_000);
     }
+
+    #[test]
+    fn test_suspend_employee_and_promote_employee() {
+        let (env, employee_client, _, sec_admin, _, _) = setup();
+        let (a, b, _) = generate_addresses(&env);
+        let employee_name = String::from_str(&env, "dele");
+
+        employee_client.add_employee(&sec_admin, &employee_name, &a, &2000);
+
+        let employee_details = employee_client.get_employee(&a).unwrap();
+
+        assert_eq!(employee_details.rank as u8, 0);
+
+        // // promote employee
+        employee_client.promote_employee(&a, &1);
+
+        let employee_details = employee_client.get_employee(&a).unwrap();
+        assert_eq!(employee_details.rank as u8 , 1);
+
+
+        // // suspend employee
+        employee_client.suspend_employee(&a);
+        let result = employee_client.is_employee_suspended(&a);
+
+        assert!(result.unwrap());
+    }
 }
